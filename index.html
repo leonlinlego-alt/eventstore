@@ -1,0 +1,230 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+#app{font-family:var(--font-sans);max-width:480px;margin:0 auto;display:flex;flex-direction:column;height:680px}
+
+.topbar{padding:14px 16px 10px;flex-shrink:0}
+.topbar h1{font-size:16px;font-weight:500;color:var(--color-text-primary);line-height:1.3}
+.topbar p{font-size:12px;color:var(--color-text-secondary);margin-top:2px}
+
+.brand-scroll{display:flex;gap:6px;overflow-x:auto;padding:0 16px 10px;flex-shrink:0;scrollbar-width:none}
+.brand-scroll::-webkit-scrollbar{display:none}
+.bp{padding:6px 14px;font-size:12px;border:0.5px solid var(--color-border-secondary);border-radius:20px;cursor:pointer;background:var(--color-background-primary);color:var(--color-text-secondary);white-space:nowrap;flex-shrink:0;transition:all .15s}
+.bp.on{color:#fff;border-color:transparent}
+
+.view{flex:1;overflow:hidden;position:relative}
+.pane{position:absolute;inset:0;overflow-y:auto;transition:opacity .2s,transform .2s}
+.pane.hide{opacity:0;pointer-events:none;transform:translateY(6px)}
+
+.store-list{padding:0 12px 80px;display:flex;flex-direction:column;gap:6px}
+.s-card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:12px 14px;cursor:pointer;transition:border-color .15s;active:background:var(--color-background-secondary)}
+.s-card:active{background:var(--color-background-secondary)}
+.s-card.sel{border-color:var(--color-border-info);background:var(--color-background-info)}
+.s-top{display:flex;align-items:center;gap:7px;margin-bottom:4px}
+.dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.s-brand{font-size:11px;font-weight:500;color:var(--color-text-secondary)}
+.s-card.sel .s-brand{color:var(--color-text-info)}
+.s-name{font-size:14px;font-weight:500;color:var(--color-text-primary)}
+.s-addr{font-size:12px;color:var(--color-text-secondary);margin-top:3px;line-height:1.5}
+.s-phone{font-size:12px;color:var(--color-text-tertiary);margin-top:4px}
+
+.map-pane{display:flex;flex-direction:column}
+.map-detail{padding:10px 16px;flex-shrink:0;border-bottom:0.5px solid var(--color-border-tertiary);min-height:58px;display:flex;align-items:center;gap:10px}
+.md-hint{font-size:12px;color:var(--color-text-tertiary)}
+.md-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.md-name{font-size:13px;font-weight:500;color:var(--color-text-primary)}
+.md-addr{font-size:12px;color:var(--color-text-secondary);margin-top:1px}
+.md-open{margin-left:auto;padding:6px 11px;font-size:12px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:transparent;cursor:pointer;color:var(--color-text-primary);flex-shrink:0}
+.map-frame-wrap{flex:1;overflow:hidden}
+#map-frame{width:100%;height:100%;border:none;min-height:480px}
+
+.bottom-nav{display:flex;border-top:0.5px solid var(--color-border-tertiary);flex-shrink:0;background:var(--color-background-primary)}
+.nav-btn{flex:1;padding:12px 0;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;border:none;background:transparent;color:var(--color-text-secondary);font-size:11px;font-family:var(--font-sans)}
+.nav-btn.on{color:var(--color-text-info)}
+.nav-icon{width:20px;height:20px}
+
+.count-row{padding:4px 16px 6px;display:flex;align-items:center;gap:6px;flex-shrink:0}
+.count-txt{font-size:12px;color:var(--color-text-secondary)}
+.count-n{font-size:12px;font-weight:500;color:var(--color-text-primary)}
+</style>
+
+<div id="app">
+  <div class="topbar">
+    <h1>樂高活動門市</h1>
+    <p>《同樂同學 拼砌探索冊》TWD$1,000 購物享 $200 現金券</p>
+  </div>
+
+  <div class="brand-scroll" id="brand-scroll"></div>
+
+  <div class="count-row">
+    <span class="count-txt">顯示店家</span>
+    <span class="count-n" id="cnt">41</span>
+    <span class="count-txt">間</span>
+  </div>
+
+  <div class="view">
+    <div class="pane" id="pane-list">
+      <div class="store-list" id="store-list"></div>
+    </div>
+    <div class="pane hide map-pane" id="pane-map">
+      <div class="map-detail" id="map-detail">
+        <span class="md-hint">從列表選取店家以定位</span>
+      </div>
+      <div class="map-frame-wrap">
+        <iframe id="map-frame" allowfullscreen loading="lazy"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <nav class="bottom-nav">
+    <button class="nav-btn on" id="nav-list" onclick="switchTab('list')">
+      <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+        <rect x="3" y="4" width="14" height="2.5" rx="1"/>
+        <rect x="3" y="8.75" width="14" height="2.5" rx="1"/>
+        <rect x="3" y="13.5" width="14" height="2.5" rx="1"/>
+      </svg>
+      列表
+    </button>
+    <button class="nav-btn" id="nav-map" onclick="switchTab('map')">
+      <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M10 2C7.24 2 5 4.24 5 7c0 4.25 5 11 5 11s5-6.75 5-11c0-2.76-2.24-5-5-5z"/>
+        <circle cx="10" cy="7" r="1.5"/>
+      </svg>
+      地圖
+    </button>
+  </nav>
+</div>
+
+<script>
+const BRANDS=[
+  {name:"樂高授權專賣店",color:"#E24B4A"},
+  {name:"鼎美玩具",color:"#378ADD"},
+  {name:"麗嬰國際Fun Box",color:"#1D9E75"},
+  {name:"必買站",color:"#BA7517"},
+  {name:"BRICK PAPA",color:"#7F77DD"},
+  {name:"東東玩具城",color:"#D4537E"},
+  {name:"熊樂家玩具店",color:"#639922"},
+  {name:"天利模型",color:"#888780"},
+  {name:"創意機器人",color:"#D85A30"},
+];
+const BC=Object.fromEntries(BRANDS.map(b=>[b.name,b.color]));
+const S=[
+  {b:"樂高授權專賣店",n:"遠百信義A13",a:"台北市信義區松仁路58號3樓",p:"02-77092921"},
+  {b:"樂高授權專賣店",n:"板橋大遠百",a:"新北市板橋區新站路28號2樓",p:"02-29648421"},
+  {b:"樂高授權專賣店",n:"南港Lalaport",a:"台北市南港區經貿二路131號1樓",p:"02-2654-7958"},
+  {b:"樂高授權專賣店",n:"新竹遠百SOGO",a:"新竹市東區中央路239號",p:"03-5426180"},
+  {b:"樂高授權專賣店",n:"台中大遠百",a:"台中市西屯區台灣大道三段251號3樓",p:"04-22542743"},
+  {b:"樂高授權專賣店",n:"台南南紡",a:"台南市東區中華東路一段358號1樓",p:"06-2087482"},
+  {b:"樂高授權專賣店",n:"高雄義享天地",a:"高雄市鼓山區大順一路115號2F",p:"07-5506812"},
+  {b:"鼎美玩具",n:"台北統一時代店",a:"台北市信義區松高路11號4樓",p:"02-7744-7502"},
+  {b:"鼎美玩具",n:"南港三井LaLaport店",a:"台北市南港區經貿二路131號3樓",p:"02-7733-7993"},
+  {b:"鼎美玩具",n:"中和環球",a:"新北市中和區中山路3段122號3樓",p:"02-7723-0228"},
+  {b:"鼎美玩具",n:"美麗華",a:"台北市中山區敬業三路22號4樓",p:"02-7723-0561"},
+  {b:"鼎美玩具",n:"林口三井Outlet店",a:"新北市林口區文化三路一段356號2樓",p:"02-7709-9920"},
+  {b:"鼎美玩具",n:"桃園台茂",a:"桃園市蘆竹區南崁路一段112號4樓",p:"03-271-1393"},
+  {b:"鼎美玩具",n:"台中中友",a:"台中市北區三民路三段161號B棟7樓",p:"04-3702-3971"},
+  {b:"鼎美玩具",n:"台中三井LaLaport店",a:"台中市東區進德路600號4樓",p:"04-3707-7683"},
+  {b:"鼎美玩具",n:"台中麗寶Outlet店",a:"台中市后里區福容路201號2樓",p:"04-3700-7597"},
+  {b:"鼎美玩具",n:"中港三井Outlet店",a:"台中市梧棲區台灣大道十段168號1樓",p:"04-3707-7665"},
+  {b:"鼎美玩具",n:"台南三井Outlet店",a:"台南市歸仁區歸仁大道101號3樓",p:"06-700-3770"},
+  {b:"鼎美玩具",n:"漢神巨蛋",a:"高雄市左營區博愛二路777號6樓",p:"07-974-1202"},
+  {b:"麗嬰國際Fun Box",n:"信義A8",a:"台北市松高路12號5樓",p:"02-2722-2870"},
+  {b:"麗嬰國際Fun Box",n:"台中三越",a:"台中市西屯區台灣大道三段301號6樓",p:"04-2258-1590"},
+  {b:"麗嬰國際Fun Box",n:"忠孝SOGO",a:"台北市大安區忠孝東路四段45號10樓",p:"02-87715367"},
+  {b:"麗嬰國際Fun Box",n:"南西三越",a:"台北市中山區南京西路12號6樓",p:"02-25221935"},
+  {b:"麗嬰國際Fun Box",n:"板橋大遠百",a:"新北市板橋區新站路28號5樓",p:"02-29641752"},
+  {b:"麗嬰國際Fun Box",n:"新莊宏匯廣場",a:"新北市新莊區新北大道四段3號5樓",p:"02-8521-5694"},
+  {b:"麗嬰國際Fun Box",n:"誠品生活新店",a:"新北市新店區中興路三段70號3樓",p:"02-89147252"},
+  {b:"麗嬰國際Fun Box",n:"新竹巨城",a:"新竹市中央路229號5樓",p:"03-623-8504"},
+  {b:"麗嬰國際Fun Box",n:"竹北遠東百貨",a:"新竹縣竹北市莊敬北路18號3樓",p:"03-6675649"},
+  {b:"麗嬰國際Fun Box",n:"台中遠東",a:"台中市西屯區台灣大道三段251號5樓",p:"04-22541790"},
+  {b:"麗嬰國際Fun Box",n:"台南西門三越",a:"台南市中西區西門路一段658號3樓",p:"06-303-0602"},
+  {b:"麗嬰國際Fun Box",n:"夢時代",a:"高雄市前鎮區中華五路789號5樓",p:"07-812-5562"},
+  {b:"必買站",n:"必買站-東區",a:"台北市大安區仁愛路四段345巷4弄26號",p:"02-2771-7551"},
+  {b:"必買站",n:"必買站-師大",a:"台北市大安區師大路93巷13號",p:"02-3365-1558"},
+  {b:"必買站",n:"必買站-林口",a:"新北市林口區文化三路一段39巷295號",p:"02-2600-7928"},
+  {b:"必買站",n:"必買站-新竹",a:"新竹縣竹北市田厝街31號",p:"03-658-9153"},
+  {b:"必買站",n:"必買站-台南",a:"台南市安平區建平三街59號",p:"02-2600-7928"},
+  {b:"必買站",n:"必買站-高雄",a:"高雄市新興區南台路66號",p:"07-285-4568"},
+  {b:"BRICK PAPA",n:"BRICK PAPA-內湖專賣店",a:"台北市內湖區基湖路37號",p:"02-2659-5555"},
+  {b:"東東玩具城",n:"東東玩具城",a:"台北市大同區太原路54號",p:"02-2556-1661"},
+  {b:"熊樂家玩具店",n:"熊樂家玩具店",a:"高雄市前鎮區管仲南路366號",p:"07-536-6336"},
+  {b:"天利模型",n:"天利模型-左營店",a:"高雄市左營區華欣路99號",p:"07-552-3497"},
+  {b:"創意機器人",n:"創意機器人",a:"台南市北區海安路三段766號",p:"06-282-0703"},
+];
+
+let active="all", selIdx=null, tab="list";
+
+function initBrands(){
+  const el=document.getElementById("brand-scroll");
+  let h=`<div class="bp on" id="bp-all" onclick="setBrand('all')" style="background:#444441;color:#fff;border-color:transparent">全部 ${S.length}</div>`;
+  BRANDS.forEach(b=>{
+    const c=S.filter(s=>s.b===b.name).length;
+    h+=`<div class="bp" id="bp-${b.name}" onclick="setBrand('${b.name}')" data-c="${b.color}">${b.name} ${c}</div>`;
+  });
+  el.innerHTML=h;
+}
+
+function setBrand(brand){
+  active=brand; selIdx=null;
+  document.querySelectorAll(".bp").forEach(p=>{p.classList.remove("on");p.style.background="";p.style.color="";p.style.borderColor="";});
+  const pid=brand==="all"?"bp-all":`bp-${brand}`;
+  const pill=document.getElementById(pid);
+  if(pill){
+    pill.classList.add("on");
+    const c=brand==="all"?"#444441":BC[brand];
+    pill.style.background=c; pill.style.color="#fff"; pill.style.borderColor="transparent";
+  }
+  document.getElementById("cnt").textContent=getF().length;
+  renderList();
+  resetMap();
+}
+
+function getF(){ return active==="all"?S:S.filter(s=>s.b===active); }
+
+function renderList(){
+  const el=document.getElementById("store-list");
+  el.innerHTML=getF().map(s=>{
+    const i=S.indexOf(s);
+    return `<div class="s-card${selIdx===i?" sel":""}" onclick="pick(${i})">
+      <div class="s-top"><div class="dot" style="background:${BC[s.b]}"></div><span class="s-brand">${s.b}</span></div>
+      <div class="s-name">${s.n}</div>
+      <div class="s-addr">${s.a}</div>
+      <div class="s-phone">${s.p}</div>
+    </div>`;
+  }).join("");
+}
+
+function pick(idx){
+  selIdx=idx;
+  renderList();
+  const s=S[idx];
+  const q=encodeURIComponent(s.a+" "+s.n);
+  document.getElementById("map-frame").src=`https://maps.google.com/maps?q=${q}&output=embed&z=16`;
+  document.getElementById("map-detail").innerHTML=`
+    <div class="md-dot" style="background:${BC[s.b]}"></div>
+    <div style="min-width:0;flex:1">
+      <div class="md-name">${s.n}</div>
+      <div class="md-addr" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.a}</div>
+    </div>
+    <button class="md-open" onclick="openLink('https://maps.google.com/maps?q=${q}')">導航 ↗</button>`;
+  switchTab("map");
+}
+
+function resetMap(){
+  document.getElementById("map-frame").src="https://maps.google.com/maps?q=台灣&output=embed&z=7";
+  document.getElementById("map-detail").innerHTML=`<span class="md-hint">從列表選取店家以定位</span>`;
+}
+
+function switchTab(t){
+  tab=t;
+  document.getElementById("pane-list").classList.toggle("hide",t!=="list");
+  document.getElementById("pane-map").classList.toggle("hide",t!=="map");
+  document.getElementById("nav-list").classList.toggle("on",t==="list");
+  document.getElementById("nav-map").classList.toggle("on",t==="map");
+}
+
+initBrands();
+renderList();
+document.getElementById("map-frame").src="https://maps.google.com/maps?q=台灣&output=embed&z=7";
+</script>
